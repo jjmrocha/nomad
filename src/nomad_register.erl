@@ -14,7 +14,7 @@
 %% limitations under the License.
 %%
 
--module(register).
+-module(nomad_register).
 
 %% ====================================================================
 %% API functions

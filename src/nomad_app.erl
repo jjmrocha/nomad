@@ -14,23 +14,26 @@
 %% limitations under the License.
 %%
 
-{application, nomad, [
-	{description, "Global Processes and Registration"},
-	{vsn, "0.5.0"},
-	{modules, [
-	]},
-	{registered, [
-		nomad_hlc_sup,
-		nomad_async
-	]},
-	{applications, [
-		kernel,
-		stdlib
-	]},	
-	{mod, {nomad_app, []}},
-	{env, [
-	]},
-	{maintainers, ["Joaquim Rocha"]},
-	{licenses, ["Apache License 2.0"]},
-	{links, [{"Github", "https://github.com/jjmrocha/nomad"}]}	
-]}.
+-module(nomad_app).
+
+-include("nomad_hlc.hrl").
+
+-behaviour(application).
+
+%% ====================================================================
+%% API functions
+%% ====================================================================
+-export([start/2, stop/1]).
+
+start(_Type, _StartArgs) ->
+	{ok, Pid} = nomad_sup:start_link(),
+	nomad_hlc_sup:start_clock(?DEFAULT_CLOCK),
+	{ok, Pid}.
+
+stop(_State) ->
+	ok.
+
+%% ====================================================================
+%% Internal functions
+%% ====================================================================
+

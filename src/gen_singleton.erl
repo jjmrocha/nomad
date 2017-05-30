@@ -26,9 +26,9 @@
 
 -callback init(Args :: term()) ->
 	{ok, State :: term()} | 
-  {ok, State :: term(), timeout() | hibernate} |
+	{ok, State :: term(), timeout() | hibernate} |
 	{stop, Reason :: term()} | 
-  ignore.
+	ignore.
 
 -callback handle_call(Request :: term(), From :: {pid(), Tag :: term()}, State :: term()) ->
 	{reply, Reply :: term(), NewState :: term()} |
@@ -53,7 +53,7 @@
 
 -callback code_change(OldVsn :: (term() | {down, term()}), State :: term(), Extra :: term()) ->
 	{ok, NewState :: term()} | 
-  {error, Reason :: term()}.
+	{error, Reason :: term()}.
 
 %% ====================================================================
 %% API functions
@@ -79,7 +79,7 @@ cast(Name, Msg) ->
 	gen_server:cast(Name, Msg).
 
 send(Name, Msg) ->
-	register:send(Name, Msg).
+	nomad_register:send(Name, Msg).
 
 %% ====================================================================
 %% Behavioural functions
@@ -109,7 +109,7 @@ handle_cast(_Msg, State) ->
 
 %% handle_info/2
 handle_info(timeout, State=#state{name=Name, mod=Mod, args=Args, singleton=none}) ->
-	case register:register_name(Name, self()) of
+	case nomad_register:register_name(Name, self()) of
 		true ->
 			case Mod:init(Args) of
 				{ok, Data} -> {noreply, State#state{data=Data, singleton=my_self}};
@@ -120,7 +120,7 @@ handle_info(timeout, State=#state{name=Name, mod=Mod, args=Args, singleton=none}
 				Other -> Other
 			end;
 		false ->
-			case register:whereis_name(Name) of
+			case nomad_register:whereis_name(Name) of
 				undefined -> {noreply, State, 0};
 				Pid -> 
 					MRef = erlang:monitor(process, Pid),
@@ -140,7 +140,7 @@ handle_info(_Info, State) ->
 
 %% terminate/2
 terminate(Reason, #state{name=Name, mod=Mod, data=Data, singleton=my_self}) ->
-	register:unregister_name(Name),
+	nomad_register:unregister_name(Name),
 	Mod:terminate(Reason, Data);
 
 terminate(_Reason, #state{singleton=MRef}) ->

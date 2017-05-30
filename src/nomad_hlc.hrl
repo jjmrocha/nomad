@@ -14,23 +14,5 @@
 %% limitations under the License.
 %%
 
-{application, nomad, [
-	{description, "Global Processes and Registration"},
-	{vsn, "0.5.0"},
-	{modules, [
-	]},
-	{registered, [
-		nomad_hlc_sup,
-		nomad_async
-	]},
-	{applications, [
-		kernel,
-		stdlib
-	]},	
-	{mod, {nomad_app, []}},
-	{env, [
-	]},
-	{maintainers, ["Joaquim Rocha"]},
-	{licenses, ["Apache License 2.0"]},
-	{links, [{"Github", "https://github.com/jjmrocha/nomad"}]}	
-]}.
+
+-define(DEFAULT_CLOCK, '$nomad.hlc.default.clock').
