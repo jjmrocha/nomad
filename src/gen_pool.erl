@@ -92,19 +92,19 @@ cast(Process, Msg) ->
 
 queue_size(Process) ->
 	case async_queue(Process) of
-		{ok, Pid} -> async_queue:queue_size(Pid);
+		{ok, Pid} -> nomad_queue:queue_size(Pid);
 		_ -> {error, queue_not_found}
 	end.
 
 running_count(Process) ->
 	case async_queue(Process) of
-		{ok, Pid} -> async_queue:running_count(Pid);
+		{ok, Pid} -> nomad_queue:running_count(Pid);
 		_ -> {error, queue_not_found}
 	end.
 
 flush_pending(Process) ->
 	case async_queue(Process) of
-		{ok, Pid} -> async_queue:flush(Pid);
+		{ok, Pid} -> nomad_queue:flush(Pid);
 		_ -> {error, queue_not_found}
 	end.
 
@@ -132,7 +132,7 @@ handle_call(?QUEUE_REQUEST, _From, State=#state{queue=Pid}) ->
 
 handle_call(Request, From, State=#state{queue=Pid, mod=Mod, data=Data}) ->
 	Server = self(),
-	async_queue:push(Pid, fun() ->
+	nomad_queue:push(Pid, fun() ->
 				try Mod:handle_call(Request, Data) of
 					{reply, Reply} -> gen_server:reply(From, Reply);
 					noreply -> ok;
@@ -149,7 +149,7 @@ handle_call(Request, From, State=#state{queue=Pid, mod=Mod, data=Data}) ->
 %% handle_cast/2
 handle_cast(Msg, State=#state{queue=Pid, mod=Mod, data=Data}) ->
 	Server = self(),
-	async_queue:push(Pid, fun() ->
+	nomad_queue:push(Pid, fun() ->
 				try Mod:handle_cast(Msg, Data) of
 					noreply -> ok;
 					{stop, Reason} -> send_stop(Server, Reason);
@@ -168,7 +168,7 @@ handle_info({'EXIT', _FromPid, ?EXIT_REASON(Reason)}, _State) ->
 
 handle_info(Info, State=#state{queue=Pid, mod=Mod, data=Data}) ->
 	Server = self(),
-	async_queue:push(Pid, fun() ->
+	nomad_queue:push(Pid, fun() ->
 				try Mod:handle_info(Info, Data) of
 					noreply -> ok;
 					{stop, Reason} -> send_stop(Server, Reason);
