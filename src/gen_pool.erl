@@ -21,7 +21,7 @@
 -define(EXIT_REASON(Reason), {'$nomad.pool.exit', Reason}).
 -define(STOP_REASON(Reason), {'$nomad.pool.stop', Reason}).
 
--define(QUEUE_REQUEST, '$nomad.pool.queue.request').
+-define(QUEUE_PID, '$nomad.pool.queue.pid').
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -52,7 +52,8 @@
 	term().
 
 -callback code_change(OldVsn :: (term() | {down, term()}), State :: term(), Extra :: term()) ->
-	{ok, NewState :: term()} | {error, Reason :: term()}.
+	{ok, NewState :: term()} | 
+	{error, Reason :: term()}.
 
 %% ====================================================================
 %% API functions
@@ -126,7 +127,7 @@ init([Mod, Args, Options]) ->
 	end.
 
 %% handle_call/3
-handle_call(?QUEUE_REQUEST, _From, State=#state{queue=Pid}) ->
+handle_call(?QUEUE_PID, _From, State=#state{queue=Pid}) ->
 	Reply = {ok, Pid},
 	{reply, Reply, State};
 
@@ -194,7 +195,7 @@ code_change(OldVsn, State=#state{mod=Mod, data=Data}, Extra) ->
 %% ====================================================================
 
 async_queue(Process) ->
-	gen_server:call(Process, ?QUEUE_REQUEST).
+	gen_server:call(Process, ?QUEUE_PID).
 
 send_stop(Server, Reason) ->
 	exit(Server, ?STOP_REASON(Reason)).
