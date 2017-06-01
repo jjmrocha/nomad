@@ -21,7 +21,8 @@
 	]},
 	{registered, [
 		nomad_hlc_sup,
-		nomad_async
+		nomad_async,
+		nomad_keeper
 	]},
 	{applications, [
 		kernel,

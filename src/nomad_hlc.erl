@@ -94,7 +94,6 @@ before(T1, T2) ->
 
 %% init/1
 init([]) ->
-	error_logger:info_msg("~p starting on [~p]...\n", [?MODULE, self()]),
 	{ok, #state{last = current_timestamp()}}.
 
 %% handle_call/3
