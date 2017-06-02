@@ -33,10 +33,7 @@ create(EtsName, Options) when is_atom(EtsName), is_list(Options) ->
 		true ->
 			case gen_server:call(?MODULE, {give, EtsName, self()}) of
 				{ok, Tab} ->
-					receive
-						{'ETS-TRANSFER', Tab, _FromPid, EtsName} -> ok
-					after 100 -> ok
-					end,
+					flush(Tab, EtsName),
 					Tab;
 				fail ->
 					create(EtsName, Options)
@@ -73,8 +70,11 @@ handle_call({give, EtsName, NewOwner}, _From, Inheritance) ->
 			{reply, Reply, NewInheritance};
 		false ->
 			{reply, fail, Inheritance}
-	end.
-
+	end;
+	
+handle_call(_Request, _From, Inheritance) ->
+	{noreply, Inheritance}.
+	
 %% handle_cast/2
 handle_cast(_Msg, State) ->
 	{noreply, State}.
@@ -82,14 +82,15 @@ handle_cast(_Msg, State) ->
 %% handle_info/2
 handle_info({'ETS-TRANSFER', Tab, _FromPid, EtsName}, Inheritance) ->
 	NewInheritance = dict:store(EtsName, Tab, Inheritance),
-	{noreply, NewInheritance}.
+	{noreply, NewInheritance};
+	
+handle_info(_Info, Inheritance) ->
+	{noreply, Inheritance};
 
 %% terminate/2
 terminate(_Reason, Inheritance) ->
-	lists:foreach(fun({_, Tab}) -> 
-				ets:delete(Tab) 
-		end, dict:to_list(Inheritance)),
-	ok.
+	Tables = dict:to_list(Inheritance),
+	drop_tables(Tables).
 
 %% code_change/3
 code_change(_OldVsn, State, _Extra) ->
@@ -98,3 +99,14 @@ code_change(_OldVsn, State, _Extra) ->
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+
+flush(Tab, EtsName) ->
+	receive
+		{'ETS-TRANSFER', Tab, _FromPid, EtsName} -> ok
+	after 100 -> ok
+	end.
+
+drop_tables([]) -> ok;
+drop_tables([{_, Tab}|T]) -> 
+	ets:delete(Tab),
+	drop_tables(T).
