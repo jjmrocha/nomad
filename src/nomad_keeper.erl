@@ -85,7 +85,7 @@ handle_info({'ETS-TRANSFER', Tab, _FromPid, EtsName}, Inheritance) ->
 	{noreply, NewInheritance};
 	
 handle_info(_Info, Inheritance) ->
-	{noreply, Inheritance};
+	{noreply, Inheritance}.
 
 %% terminate/2
 terminate(_Reason, Inheritance) ->

@@ -38,6 +38,10 @@ init([]) ->
 			start => {nomad_keeper, start_link, []}, 
 			restart => permanent, 
 			type => worker},
+	GROUP = #{id => nomad_group, 
+			start => {nomad_group, start_link, []}, 
+			restart => permanent, 
+			type => worker},	
 	HLC = #{id => nomad_hlc_sup, 
 			start => {nomad_hlc_sup, start_link, []}, 
 			restart => permanent, 
@@ -49,7 +53,7 @@ init([]) ->
 	SupFlags = #{strategy => one_for_one, 
 			intensity => 2, 
 			period => 10},
-	{ok, {SupFlags, [KEEPER, HLC, ASYNC]}}.
+	{ok, {SupFlags, [KEEPER, GROUP, HLC, ASYNC]}}.
 
 %% ====================================================================
 %% Internal functions
