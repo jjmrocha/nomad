@@ -38,7 +38,7 @@
 -export([start_link/0]).
 -export([join/1, join/2, leave/1, leave/2]).
 -export([send/2]).
--export([groups/0, groups/1, members/1]).
+-export([groups/0, groups/1, members/1, local_members/1]).
 
 start_link() ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -85,6 +85,9 @@ members(Group) ->
 	Nodes = remote_nodes(Group),
 	RemotePids = remote_pids(Nodes, Group),
 	LocalPids ++ RemotePids.
+
+local_members(Group) ->
+	local_pids(Group).
 
 %% ====================================================================
 %% Behavioural functions
