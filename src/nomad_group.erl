@@ -150,8 +150,7 @@ handle_cast(_Msg, State) ->
 
 %% handle_info/2
 handle_info({'DOWN', _Ref, process, Pid, _Info}, State) ->
-	Groups = local_groups(Pid),
-	leave_group(Pid, Groups),
+	remove_pid(Pid),
 	{noreply, State};
 
 handle_info({nodeup, Node}, State) ->
@@ -246,7 +245,7 @@ leave_group(Pid, Group) ->
 			dec_pid_counter(Pid)
 	end.
 	
-drop_pid(Pid) ->
+remove_pid(Pid) ->
 	Groups = local_groups(Pid),
 	drop_pid_counter(Pid),
 	lists:foreach(fun(Group) ->
