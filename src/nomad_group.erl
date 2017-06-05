@@ -260,10 +260,10 @@ join_group(Pid, Group) ->
 	
 remove_pid(Pid) ->
 	Groups = local_groups(Pid),
-	drop_pid_counter(Pid),
+	ets:delete(?COUNTER_TABLE, ?PID_PK(Pid)),
+	ets:select_delete(?GROUP_TABLE, [{?LOCAL_RECORD('_', Pid), [], [true]}]),
 	lists:foreach(fun(Group) ->
-				ets:delete_object(?GROUP_TABLE, ?LOCAL_RECORD(Group, Pid)),
-				dec_group_counter(Group)
+				decrement_group_counter(Group)
 		end, Groups).
 
 increment_pid_counter(Pid) ->
@@ -290,7 +290,11 @@ decrement_group_counter(Group) ->
 			
 decrement_pid_counter(Pid) ->			
 	case update_pid_counter(Pid, -1) of
-		0 -> drop_pid_counter(Pid);
+		0 -> 
+			case ets:take(?COUNTER_TABLE, ?PID_PK(Pid)) of
+				[?PID_RECORD(_, Ref, _)] -> erlang:demonitor(Ref);
+				_ -> ok
+			end;		
 		_ -> ok
 	end.
 	
@@ -302,12 +306,6 @@ update_group_counter(Group, Value) ->
 	
 update_counter(Key, Pos, Value) ->
 	ets:update_counter(?COUNTER_TABLE, Key, {Pos, Value}).
-	
-drop_pid_counter(Pid) ->
-	case ets:take(?COUNTER_TABLE, ?PID_PK(Pid)) of
-		[?PID_RECORD(_, Ref, _)] -> erlang:demonitor(Ref);
-		_ -> ok
-	end.
 	
 count(Group, Pid) ->
 	ets:select_count(?GROUP_TABLE, [{?LOCAL_RECORD(Group, Pid), [], [true]}]).
