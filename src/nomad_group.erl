@@ -238,25 +238,12 @@ leave_group(Pid, [Group|T]) ->
 	leave_group(Pid, Group),
 	leave_group(Pid, T);
 leave_group(Pid, Group) ->
-	case ets:select_count(?GROUP_TABLE, [{?LOCAL_RECORD(Group, Pid), [], [true]}]) of
+	case count(Group, Pid) of
 		0 -> ok;
 		_ ->
 			ets:delete_object(?GROUP_TABLE, ?LOCAL_RECORD(Group, Pid)),
-			case ets:update_counter(?COUNTER_TABLE, ?GROUP_PK(Group), {2, -1}) of
-				0 -> 
-					ets:delete(?COUNTER_TABLE, ?GROUP_PK(Group)),
-					cancel_request(Group);
-				_ -> ok
-			end,
-			case ets:update_counter(?COUNTER_TABLE, ?PID_PK(Pid), {3, -1}) of
-				0 -> 
-					case ets:take(?COUNTER_TABLE, ?PID_PK(Pid)) of
-						[?PID_RECORD(_, Ref, _)] -> 
-							erlang:demonitor(Ref);
-						_ -> ok
-					end;
-				_ -> ok
-			end
+			dec_group_counter(Group),
+			dec_pid_counter(Pid)
 	end.
 
 join_group(_Pid, []) -> ok;
@@ -264,27 +251,58 @@ join_group(Pid, [Group|T]) ->
 	join_group(Pid, Group),
 	join_group(Pid, T);
 join_group(Pid, Group) ->
-	case ets:select_count(?GROUP_TABLE, [{?LOCAL_RECORD(Group, Pid), [], [true]}]) of 
+	case count(Group, Pid) of 
 		0 -> 
-			inc_pid(Pid),
-			inc_group(Group),
+			inc_pid_counter(Pid),
+			inc_group_counter(Group),
 			ets:insert(?GROUP_TABLE, ?LOCAL_RECORD(Group, Pid));
 		_ -> ok
 	end.
 
-inc_pid(Pid) ->
-	try ets:update_counter(?COUNTER_TABLE, ?PID_PK(Pid), {3, +1})
+inc_pid_counter(Pid) ->
+	try update_pid_counter(Pid, +1)
 	catch _:_ ->
 			Ref = erlang:monitor(process, Pid),
 			ets:insert(?COUNTER_TABLE, ?PID_RECORD(Pid, Ref, 1))
 	end.
 
-inc_group(Group) ->
-	try ets:update_counter(?COUNTER_TABLE, ?GROUP_PK(Group), {2, +1})
+inc_group_counter(Group) ->
+	try update_group_counter(Group, +1)
 	catch _:_ ->
 			forward_request(Group),
 			ets:insert(?COUNTER_TABLE, ?GROUP_RECORD(Group, 1))
 	end.	
+	
+dec_group_counter(Group) ->
+	case update_group_counter(Group, -1) of
+		0 -> 
+			ets:delete(?COUNTER_TABLE, ?GROUP_PK(Group)),
+			cancel_request(Group);
+		_ -> ok
+	end.
+			
+dec_pid_counter(Pid) ->			
+	case update_pid_counter(Pid, -1) of
+		0 -> 
+			case ets:take(?COUNTER_TABLE, ?PID_PK(Pid)) of
+				[?PID_RECORD(_, Ref, _)] -> 
+					erlang:demonitor(Ref);
+				_ -> ok
+			end;
+		_ -> ok
+	end.
+	
+count(Group, Pid) ->
+	ets:select_count(?GROUP_TABLE, [{?LOCAL_RECORD(Group, Pid), [], [true]}]).
+	
+update_pid_counter(Pid, Value) ->
+	update_counter(?PID_PK(Pid), 3, Value).
+	
+update_group_counter(Group, Value) ->
+	update_counter(?GROUP_PK(Group), 2, Value).
+	
+update_counter(Key, Pos, Value) ->
+	ets:update_counter(?COUNTER_TABLE, Key, {Pos, Value}).
 
 forward_request([]) -> ok;
 forward_request([Group|T]) -> 
