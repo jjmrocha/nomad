@@ -37,7 +37,7 @@
 %% ====================================================================
 -export([start_link/0]).
 -export([join/1, join/2, leave/1, leave/2]).
--export([send/2]).
+-export([publish/2, publish_local/2]).
 -export([groups/0, groups/1, members/1, local_members/1]).
 
 start_link() ->
@@ -65,11 +65,14 @@ leave(Group, Pid) ->
 	Node = node(Pid),
 	gen_server:call({?MODULE, Node}, {leave, Group, Pid}).
 
-send(Group, Message) ->
-	Pids = local_pids(Group),
-	send_msg(Pids, Message),
+publish(Group, Message) ->
+	publish_local(Group),
 	Nodes = remote_nodes(Group),
 	remote_send(Nodes, Group, Message).
+	
+publish_local(Group, Message) ->
+	Pids = local_pids(Group),
+	send_msg(Pids, Message).
 
 groups() ->
 	all_groups().
