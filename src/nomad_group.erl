@@ -66,7 +66,7 @@ leave(Group, Pid) ->
 	gen_server:call({?MODULE, Node}, {leave, Group, Pid}).
 
 publish(Group, Message) ->
-	publish_local(Group),
+	publish_local(Group, Message),
 	Nodes = remote_nodes(Group),
 	remote_send(Nodes, Group, Message).
 	
