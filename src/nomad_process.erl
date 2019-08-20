@@ -45,6 +45,7 @@ distance_to(Node, {Node, _Machine, _Domain}) -> 0;
 distance_to(Node, Local) when is_atom(Node) ->
   NormalizedNode = normalize(Node),
   distance_to(NormalizedNode, Local);
+distance_to({Node, _Machine, _Domain}, {Node, _Machine, _Domain}) -> 0;
 distance_to({_RN, Machine, Domain}, {_LN, Machine, Domain}) -> 1;
 distance_to({_RN, _RM, Domain}, {_LN, _LM, Domain}) -> 2;
 distance_to(_Node, _Local) -> 3.
